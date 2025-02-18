@@ -10,6 +10,9 @@ pub enum TokenType {
     CloseBrace,
     OpenBrace,
     Semicolon,
+    Negation,
+    BitwiseComplement,
+    LogicalNegation,
 }
 
 #[derive(Debug, Clone)]
@@ -40,6 +43,20 @@ impl Lexer<'_> {
 
         while i < len.try_into().unwrap() {
             let ch = self.source.as_bytes()[i] as char;
+
+            if ch == '/' {
+                i += 1;
+
+                if self.source.as_bytes()[i] as char != '/' {
+                    return Err("Error after '/'");
+                }
+
+                while self.source.as_bytes()[i] as char != '\n' && i < len.try_into().unwrap() {
+                    i += 1;
+                }
+
+                i += 1;
+            }
 
             if ch.is_ascii_alphabetic() {
                 let mut y: usize = i;
@@ -78,6 +95,39 @@ impl Lexer<'_> {
                 });
 
                 i = y;
+
+                continue;
+            }
+
+            if ch == '-' {
+                self.tokens.push(Token {
+                    r#type: TokenType::Negation,
+                    value: "-",
+                });
+
+                i += 1;
+
+                continue;
+            }
+
+            if ch == '~' {
+                self.tokens.push(Token {
+                    r#type: TokenType::BitwiseComplement,
+                    value: "~",
+                });
+
+                i += 1;
+
+                continue;
+            }
+
+            if ch == '!' {
+                self.tokens.push(Token {
+                    r#type: TokenType::LogicalNegation,
+                    value: "!",
+                });
+
+                i += 1;
 
                 continue;
             }

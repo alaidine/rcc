@@ -35,7 +35,7 @@ impl CodeGenerator {
             }
             NodeType::Statement(statement) => {
                 let expression = match &statement.children[0] {
-                    NodeType::Expression(expression) => expression.value,
+                    NodeType::Constant(expression) => expression.value,
                     _ => return Err("error in return statement"),
                 };
 

@@ -6,7 +6,8 @@ pub enum NodeType {
     Program(ProgramNode),
     Function(FunctionNode),
     Statement(StatementNode),
-    Expression(ExpressionNode),
+    Constant(ConstantNode),
+    UnOp(Box<UnOpNode>),
 }
 
 #[derive(Debug, Clone)]
@@ -44,13 +45,28 @@ impl StatementNode {
 }
 
 #[derive(Debug, Clone)]
-pub struct ExpressionNode {
+pub struct ConstantNode {
     pub value: u32,
 }
 
-impl ExpressionNode {
+impl ConstantNode {
     pub fn new(value: u32) -> Self {
         Self { value }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct UnOpNode {
+    pub operation: TokenType,
+    pub inner_expression: Box<NodeType>,
+}
+
+impl UnOpNode {
+    pub fn new(operation: TokenType, inner_expression: NodeType) -> Self {
+        Self {
+            operation,
+            inner_expression: Box::new(inner_expression),
+        }
     }
 }
 
@@ -155,18 +171,28 @@ impl Parser<'_> {
     }
 
     fn parse_expression(&mut self) -> Result<NodeType, &'static str> {
-        if self.tokens[self.current as usize].r#type != TokenType::Integer {
-            return Err("Error in parse_expression");
+        if self.tokens[self.current as usize].r#type == TokenType::Integer {
+            let expression = NodeType::Constant(ConstantNode::new(
+                self.tokens[self.current as usize]
+                    .value
+                    .parse::<u32>()
+                    .unwrap(),
+            ));
+
+            self.current += 1;
+
+            return Ok(expression);
         }
 
-        let expression = NodeType::Expression(ExpressionNode::new(
-            self.tokens[self.current as usize]
-                .value
-                .parse::<u32>()
-                .unwrap(),
-        ));
+        let operation = self.tokens[self.current as usize].r#type.clone();
 
         self.current += 1;
+
+        let inner_expression = self.parse_expression();
+        let expression = NodeType::UnOp(Box::new(UnOpNode::new(
+                operation,
+                inner_expression?
+        )));
 
         Ok(expression)
     }
